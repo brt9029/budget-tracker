@@ -1,5 +1,3 @@
-const { get } = require("express/lib/response");
-
 // variable to hold database connection
 let db;
 
@@ -49,13 +47,13 @@ function uploadBudget() {
     const budgetObjectStore = transaction.objectStore('new_budget');
 
     // get all records and place into a variable
-    const getAll = pizzaObjectStore.getAll();
+    const getAll = budgetObjectStore.getAll();
 
     // after a successfull .getAll run the following
     getAll.onsuccess = function() {
         // if there was data then send to api server
         if (getAll.result.length > 0) {
-            fetch('/api/pizzas', {
+            fetch('/api/transaction', {
                 method: 'POST',
                 body: JSON.stringify(getAll.result),
                 headers: {
