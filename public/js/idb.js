@@ -1,3 +1,5 @@
+const { get } = require("express/lib/response");
+
 // variable to hold database connection
 let db;
 
@@ -25,7 +27,7 @@ request.onsuccess = function(event) {
 request.onerror = function(event) {
     // log error here
     console.log(event.target.errorCode);
-}
+};
 
 // this will execute if there is no connection when submitting
 function saveRecord(record) {
@@ -37,4 +39,50 @@ function saveRecord(record) {
 
     // add record using .add
     budgetObjectStore.add(record);
-}
+};
+
+function uploadBudget() {
+    // open transaction on db
+    const transaction = db.transaction(['new_budget'], 'readwrite');
+
+    // access object
+    const budgetObjectStore = transaction.objectStore('new_budget');
+
+    // get all records and place into a variable
+    const getAll = pizzaObjectStore.getAll();
+
+    // after a successfull .getAll run the following
+    getAll.onsuccess = function() {
+        // if there was data then send to api server
+        if (getAll.result.length > 0) {
+            fetch('/api/pizzas', {
+                method: 'POST',
+                body: JSON.stringify(getAll.result),
+                headers: {
+                    Accept: 'application/json, text/plain, */*',
+                    'Content-Type': 'application/json' 
+                }
+            })
+            .then(response => response.json())
+            .then(serverResponse => {
+                if (serverResponse.message) {
+                    throw new Error(serverResponse);
+                }
+                // open another transaction
+                const transaction = db.transaction(['new_budget'], 'readwrite');
+                // access the new object
+                const budgetObjectStore = transaction.objectStore('new_budget');
+                // clear all items
+                budgetObjectStore.clear();
+
+                alert('All saved budgets have been submitted!');
+            })
+            .catch(err => {
+                console.log(err);
+            });
+        }
+    }
+};
+
+// listen for app coming back online
+window.addEventListener('online', uploadBudget);
